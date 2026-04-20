@@ -1,5 +1,10 @@
 import { AppShell } from "@/components/nav/AppShell";
+import { OnboardingGate } from "@/components/nav/OnboardingGate";
 
 export default function AppGroupLayout({ children }: { children: React.ReactNode }) {
-  return <AppShell>{children}</AppShell>;
+  return (
+    <OnboardingGate>
+      <AppShell>{children}</AppShell>
+    </OnboardingGate>
+  );
 }

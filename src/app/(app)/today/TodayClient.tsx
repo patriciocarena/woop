@@ -17,6 +17,7 @@ import {
 import { useJournalStore, selectTodayEntry } from "@/lib/store/journal";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
 import { DailyCoach } from "@/components/today/DailyCoach";
+import { InstallPromptCard } from "@/components/pwa/InstallPromptCard";
 
 export function TodayClient() {
   const hydrated = useHydrated();
@@ -68,6 +69,8 @@ export function TodayClient() {
           </Card>
         </Link>
       </div>
+
+      <InstallPromptCard />
 
       <DailyCoach />
 

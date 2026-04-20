@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Archivo_Black } from "next/font/google";
 import "./globals.css";
+import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -38,7 +39,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       className={`${inter.variable} ${display.variable} h-full`}
     >
-      <body className="min-h-full bg-bg text-fg antialiased">{children}</body>
+      <body className="min-h-full bg-bg text-fg antialiased">
+        <ServiceWorkerRegister />
+        {children}
+      </body>
     </html>
   );
 }

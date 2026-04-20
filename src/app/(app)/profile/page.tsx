@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AppleHealthImport } from "@/components/imports/AppleHealthImport";
 import { LockedIntegration } from "@/components/imports/LockedIntegration";
+import { ProfileSettings } from "@/components/profile/ProfileSettings";
 
 export const metadata = { title: "Profile · Woop" };
 
@@ -18,6 +19,8 @@ export default function ProfilePage() {
           <Button variant="outline" size="sm" className="mt-3">Sign out</Button>
         </CardContent>
       </Card>
+
+      <ProfileSettings />
 
       <section className="space-y-4">
         <h2 className="text-sm uppercase tracking-[0.18em] text-fg-muted">Imports</h2>
