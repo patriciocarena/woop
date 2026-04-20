@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RecoveryRing, StrainRing, SleepRing } from "@/components/metrics/RecoveryRing";
@@ -9,12 +10,9 @@ import {
   selectLatestRecovery,
   selectIsCalibrating,
 } from "@/lib/store/recovery";
-import {
-  useStrainStore,
-  selectTodayStrain,
-  selectTodayWorkouts,
-} from "@/lib/store/strain";
-import { useJournalStore, selectTodayEntry } from "@/lib/store/journal";
+import { useStrainStore } from "@/lib/store/strain";
+import { dayStrain } from "@/lib/scoring/strain";
+import { useJournalStore } from "@/lib/store/journal";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
 import { DailyCoach } from "@/components/today/DailyCoach";
 import { InstallPromptCard } from "@/components/pwa/InstallPromptCard";
@@ -24,9 +22,35 @@ export function TodayClient() {
   const latestSleep = useSleepStore(selectLatestSleep);
   const latestRecovery = useRecoveryStore(selectLatestRecovery);
   const calibrating = useRecoveryStore(selectIsCalibrating);
-  const todayStrain = useStrainStore(selectTodayStrain);
-  const todayWorkouts = useStrainStore(selectTodayWorkouts);
-  const todayJournal = useJournalStore(selectTodayEntry);
+
+  // Raw array selectors return stable references; derive "today" slices via
+  // useMemo to avoid the getServerSnapshot infinite-loop warning that fires
+  // when a selector returns a new array on every call.
+  const workouts = useStrainStore((s) => s.workouts);
+  const journalEntries = useJournalStore((s) => s.entries);
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const todayWorkouts = useMemo(
+    () => workouts.filter((w) => w.date === today),
+    [workouts, today],
+  );
+  const todayStrain = useMemo(
+    () =>
+      dayStrain({
+        workouts: todayWorkouts.map((w) => ({
+          durationMin: w.durationMin,
+          avgHr: w.avgHr,
+          maxHr: w.maxHr,
+          perceivedRpe: w.perceivedRpe,
+        })),
+      }),
+    [todayWorkouts],
+  );
+  const todayJournal = useMemo(
+    () => journalEntries.find((e) => e.date === today),
+    [journalEntries, today],
+  );
 
   const strain = hydrated ? todayStrain : 0;
   const recovery = hydrated && latestRecovery ? latestRecovery.score : 0;
