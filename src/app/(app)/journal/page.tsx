@@ -1,4 +1,5 @@
-import { PageHeader, ComingSoon } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
+import { JournalPageClient } from "./JournalPageClient";
 
 export const metadata = { title: "Journal · Woop" };
 
@@ -10,7 +11,7 @@ export default function JournalPage() {
         title="Behaviors & notes"
         description="Log daily behaviors so we can correlate them with your recovery."
       />
-      <ComingSoon phase="Phase 5" />
+      <JournalPageClient />
     </div>
   );
 }

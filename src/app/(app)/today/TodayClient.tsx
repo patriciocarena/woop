@@ -14,6 +14,7 @@ import {
   selectTodayStrain,
   selectTodayWorkouts,
 } from "@/lib/store/strain";
+import { useJournalStore, selectTodayEntry } from "@/lib/store/journal";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
 
 export function TodayClient() {
@@ -23,6 +24,7 @@ export function TodayClient() {
   const calibrating = useRecoveryStore(selectIsCalibrating);
   const todayStrain = useStrainStore(selectTodayStrain);
   const todayWorkouts = useStrainStore(selectTodayWorkouts);
+  const todayJournal = useJournalStore(selectTodayEntry);
 
   const strain = hydrated ? todayStrain : 0;
   const recovery = hydrated && latestRecovery ? latestRecovery.score : 0;
@@ -72,6 +74,27 @@ export function TodayClient() {
           <p className="text-sm text-fg-muted">{insightFor({ hydrated, recovery: latestRecovery, sleep: latestSleep, strain, workouts: todayWorkouts.length })}</p>
         </CardContent>
       </Card>
+
+      <Link href="/journal">
+        <Card className="transition-colors hover:bg-surface-2">
+          <CardHeader>
+            <CardTitle>Journal</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {hydrated && todayJournal && todayJournal.behaviors.length > 0 ? (
+              <p className="text-sm text-fg-muted">
+                {todayJournal.behaviors.length} behavior{todayJournal.behaviors.length === 1 ? "" : "s"} logged
+                {todayJournal.mood ? ` · mood ${todayJournal.mood}/5` : ""}.
+                Tap to update.
+              </p>
+            ) : (
+              <p className="text-sm text-fg-muted">
+                Tap to log today&apos;s caffeine, alcohol, screen time, meditation… so we can correlate later.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </Link>
     </div>
   );
 }
