@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="42" fill="#000"/>
+  <circle cx="96" cy="96" r="58" fill="none" stroke="#1f1f1f" stroke-width="14"/>
+  <circle cx="96" cy="96" r="58" fill="none" stroke="#16ec06" stroke-width="14" stroke-linecap="round"
+          stroke-dasharray="364" stroke-dashoffset="91" transform="rotate(-90 96 96)"/>
+  <text x="96" y="110" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
+        font-weight="900" font-size="46" fill="#fff" letter-spacing="-2">W</text>
+</svg>

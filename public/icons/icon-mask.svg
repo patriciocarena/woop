@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Maskable: full bleed bg, content kept inside the 80% safe zone (centered, ~410px) -->
+  <rect width="512" height="512" fill="#000"/>
+  <circle cx="256" cy="256" r="120" fill="none" stroke="#1f1f1f" stroke-width="28"/>
+  <circle cx="256" cy="256" r="120" fill="none" stroke="#16ec06" stroke-width="28" stroke-linecap="round"
+          stroke-dasharray="754" stroke-dashoffset="188" transform="rotate(-90 256 256)"/>
+  <text x="256" y="290" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
+        font-weight="900" font-size="100" fill="#fff" letter-spacing="-5">W</text>
+</svg>
