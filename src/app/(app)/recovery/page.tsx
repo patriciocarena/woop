@@ -1,4 +1,5 @@
-import { PageHeader, ComingSoon } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
+import { RecoveryPageClient } from "./RecoveryPageClient";
 
 export const metadata = { title: "Recovery · Woop" };
 
@@ -10,7 +11,7 @@ export default function RecoveryPage() {
         title="Daily recovery"
         description="HRV + RHR + sleep + respiratory rate combined into your readiness score."
       />
-      <ComingSoon phase="Phase 3" />
+      <RecoveryPageClient />
     </div>
   );
 }

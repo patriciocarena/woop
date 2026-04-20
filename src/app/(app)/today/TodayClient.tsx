@@ -4,15 +4,22 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RecoveryRing, StrainRing, SleepRing } from "@/components/metrics/RecoveryRing";
 import { useSleepStore, selectLatestSleep } from "@/lib/store/sleep";
+import {
+  useRecoveryStore,
+  selectLatestRecovery,
+  selectIsCalibrating,
+} from "@/lib/store/recovery";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
 
 export function TodayClient() {
   const hydrated = useHydrated();
   const latestSleep = useSleepStore(selectLatestSleep);
+  const latestRecovery = useRecoveryStore(selectLatestRecovery);
+  const calibrating = useRecoveryStore(selectIsCalibrating);
 
-  // Recovery & strain still hard-coded — wired up in Phases 3 & 4.
-  const recovery = 72;
+  // Strain still hard-coded — wired in Phase 4.
   const strain = 11.4;
+  const recovery = hydrated && latestRecovery ? latestRecovery.score : 0;
   const sleep = hydrated && latestSleep ? latestSleep.performance : 0;
 
   return (
@@ -22,9 +29,15 @@ export function TodayClient() {
         <h1 className="font-stat text-4xl mt-1">{greeting()}</h1>
       </header>
 
-      <div className="flex justify-center">
+      <Link href="/recovery" className="flex flex-col items-center gap-2">
         <RecoveryRing value={recovery} size={260} />
-      </div>
+        {hydrated && !latestRecovery && (
+          <p className="text-[11px] uppercase tracking-widest text-fg-dim">Tap to log HRV / RHR</p>
+        )}
+        {hydrated && calibrating && latestRecovery && (
+          <p className="text-[11px] uppercase tracking-widest text-fg-muted">Calibrating</p>
+        )}
+      </Link>
 
       <div className="grid grid-cols-2 gap-4">
         <Card className="flex flex-col items-center">
@@ -45,11 +58,7 @@ export function TodayClient() {
       <Card>
         <CardHeader><CardTitle>Insight</CardTitle></CardHeader>
         <CardContent>
-          <p className="text-sm text-fg-muted">
-            {hydrated && latestSleep
-              ? sleepInsight(latestSleep.performance)
-              : "Log last night's sleep to start seeing your daily score."}
-          </p>
+          <p className="text-sm text-fg-muted">{insightFor({ hydrated, recovery: latestRecovery, sleep: latestSleep })}</p>
         </CardContent>
       </Card>
     </div>
@@ -63,9 +72,27 @@ function greeting() {
   return "Good evening";
 }
 
-function sleepInsight(score: number) {
-  if (score >= 85) return "Strong sleep — your recovery should match.";
-  if (score >= 70) return "Solid night. A consistent bedtime would push you above 85%.";
-  if (score >= 50) return "Decent, but you're carrying sleep debt. Aim earlier tonight.";
-  return "Short night. Keep strain modest today and prioritise an early bedtime.";
+function insightFor({
+  hydrated,
+  recovery,
+  sleep,
+}: {
+  hydrated: boolean;
+  recovery: ReturnType<typeof selectLatestRecovery>;
+  sleep: ReturnType<typeof selectLatestSleep>;
+}) {
+  if (!hydrated) return "Loading…";
+  if (!recovery && !sleep) {
+    return "Log a sleep entry and a morning HRV reading to start seeing your daily score.";
+  }
+  if (recovery && recovery.zone === "calibrating") {
+    return "Recovery is calibrating — log a few more mornings to nail down your baseline.";
+  }
+  if (recovery?.zone === "high") return "Green recovery — push the strain today.";
+  if (recovery?.zone === "mid") return "Moderate recovery — train, but don't max out.";
+  if (recovery?.zone === "low") return "Red recovery — keep things light, prioritise sleep tonight.";
+  if (sleep && sleep.performance < 60) {
+    return "Short sleep last night. Take it easy until you have an HRV reading.";
+  }
+  return "Log this morning's HRV and RHR to get today's recovery score.";
 }
