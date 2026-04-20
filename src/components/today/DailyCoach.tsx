@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRecoveryStore } from "@/lib/store/recovery";
 import { useSleepStore } from "@/lib/store/sleep";
@@ -29,6 +29,16 @@ export function DailyCoach() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<ErrorState | null>(null);
+  const [configured, setConfigured] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/coach")
+      .then((r) => r.json())
+      .then((b) => { if (!cancelled) setConfigured(!!b.configured); })
+      .catch(() => { if (!cancelled) setConfigured(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   const hasAnyData = hydrated && (recovery.length > 0 || sleep.length > 0 || workouts.length > 0);
 
@@ -71,6 +81,22 @@ export function DailyCoach() {
       <Card>
         <CardHeader><CardTitle>Coach</CardTitle></CardHeader>
         <CardContent><p className="text-sm text-fg-muted">Loading…</p></CardContent>
+      </Card>
+    );
+  }
+
+  if (configured === false && !insight) {
+    return (
+      <Card>
+        <CardHeader><CardTitle>Coach</CardTitle></CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-fg-muted">
+            Esta función usa IA (Claude) para generar un briefing diario basado en tus últimos 30 días.
+          </p>
+          <div className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-xs text-fg-muted">
+            Agregá <code className="font-mono text-fg">ANTHROPIC_API_KEY</code> en <code className="font-mono text-fg">.env.local</code> para acceder a esta función.
+          </div>
+        </CardContent>
       </Card>
     );
   }

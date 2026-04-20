@@ -35,6 +35,10 @@ Rules:
 
 type RequestBody = { context: CoachContext; lang?: "es" | "en" };
 
+export async function GET() {
+  return NextResponse.json({ configured: !!process.env.ANTHROPIC_API_KEY });
+}
+
 export async function POST(req: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
