@@ -1,4 +1,5 @@
-import { PageHeader, ComingSoon } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
+import { SleepPageClient } from "./SleepPageClient";
 
 export const metadata = { title: "Sleep · Woop" };
 
@@ -10,7 +11,7 @@ export default function SleepPage() {
         title="Sleep performance"
         description="Manual logging, sleep need vs achieved, efficiency and consistency."
       />
-      <ComingSoon phase="Phase 2" />
+      <SleepPageClient />
     </div>
   );
 }
