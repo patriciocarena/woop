@@ -1,4 +1,5 @@
-import { PageHeader, ComingSoon } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
+import { StrainPageClient } from "./StrainPageClient";
 
 export const metadata = { title: "Strain · Woop" };
 
@@ -10,7 +11,7 @@ export default function StrainPage() {
         title="Day strain"
         description="Workout & ambient cardiovascular load on a 0–21 Borg scale."
       />
-      <ComingSoon phase="Phase 4" />
+      <StrainPageClient />
     </div>
   );
 }
