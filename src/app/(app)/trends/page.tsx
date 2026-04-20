@@ -1,4 +1,5 @@
-import { PageHeader, ComingSoon } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
+import { TrendsPageClient } from "./TrendsPageClient";
 
 export const metadata = { title: "Trends · Woop" };
 
@@ -10,7 +11,7 @@ export default function TrendsPage() {
         title="Insights & history"
         description="Rolling averages, behavior correlations and weekly performance assessments."
       />
-      <ComingSoon phase="Phase 6" />
+      <TrendsPageClient />
     </div>
   );
 }
