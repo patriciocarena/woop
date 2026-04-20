@@ -16,6 +16,7 @@ import {
 } from "@/lib/store/strain";
 import { useJournalStore, selectTodayEntry } from "@/lib/store/journal";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
+import { DailyCoach } from "@/components/today/DailyCoach";
 
 export function TodayClient() {
   const hydrated = useHydrated();
@@ -68,8 +69,10 @@ export function TodayClient() {
         </Link>
       </div>
 
+      <DailyCoach />
+
       <Card>
-        <CardHeader><CardTitle>Insight</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Quick read</CardTitle></CardHeader>
         <CardContent>
           <p className="text-sm text-fg-muted">{insightFor({ hydrated, recovery: latestRecovery, sleep: latestSleep, strain, workouts: todayWorkouts.length })}</p>
         </CardContent>
