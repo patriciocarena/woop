@@ -4,6 +4,7 @@ import { SleepRing } from "@/components/metrics/RecoveryRing";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SleepEntryForm } from "@/components/sleep/SleepEntryForm";
 import { SleepBreakdown } from "@/components/sleep/SleepBreakdown";
+import { SleepStagesBar } from "@/components/sleep/SleepStagesBar";
 import { SleepHistory } from "@/components/sleep/SleepHistory";
 import { useSleepStore, selectLatestSleep, selectLast7 } from "@/lib/store/sleep";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
@@ -31,7 +32,8 @@ export function SleepPageClient() {
       {hydrated && latest && (
         <Card>
           <CardHeader><CardTitle>Last night</CardTitle></CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {latest.stages && <SleepStagesBar stages={latest.stages} />}
             <SleepBreakdown session={latest} />
           </CardContent>
         </Card>

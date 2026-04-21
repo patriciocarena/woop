@@ -16,6 +16,10 @@ const schema = z
     asleepHours: z.number().min(0).max(14),
     disturbances: z.number().int().min(0).max(50),
     notes: z.string().max(500).optional(),
+    knowsStages: z.boolean().optional(),
+    deepHours: z.number().min(0).max(6).optional(),
+    remHours: z.number().min(0).max(6).optional(),
+    awakeMinutes: z.number().int().min(0).max(240).optional(),
   })
   .refine((v) => combineDateTime(v.date, v.bedtime, v.wake).durationMin > 0, {
     message: "Wake time must be after bedtime",
@@ -39,18 +43,36 @@ export function SleepEntryForm({ onSaved }: { onSaved?: () => void }) {
       asleepHours: 7.5,
       disturbances: 0,
       notes: "",
+      knowsStages: false,
+      deepHours: 1.5,
+      remHours: 1.5,
+      awakeMinutes: 0,
     },
   });
 
+  const knowsStages = form.watch("knowsStages");
+
   const onSubmit = (values: FormValues) => {
     const { startedAt, endedAt } = combineDateTime(values.date, values.bedtime, values.wake);
+    const asleepMin = Math.round(values.asleepHours * 60);
+
+    let stages: { coreMin: number; deepMin: number; remMin: number; awakeMin: number } | undefined;
+    if (values.knowsStages) {
+      const deepMin = Math.round((values.deepHours ?? 0) * 60);
+      const remMin = Math.round((values.remHours ?? 0) * 60);
+      const awakeMin = Math.round(values.awakeMinutes ?? 0);
+      const coreMin = Math.max(0, asleepMin - deepMin - remMin);
+      stages = { coreMin, deepMin, remMin, awakeMin };
+    }
+
     const session = addSession({
       date: values.date,
       startedAt,
       endedAt,
-      asleepMin: Math.round(values.asleepHours * 60),
+      asleepMin,
       disturbances: values.disturbances,
       notes: values.notes,
+      stages,
     });
     setSavedScore(session.performance);
     onSaved?.();
@@ -101,6 +123,55 @@ export function SleepEntryForm({ onSaved }: { onSaved?: () => void }) {
         <Label htmlFor="notes">Notes</Label>
         <Input id="notes" placeholder="Optional — woke up at 3am, etc." {...form.register("notes")} />
       </Field>
+
+      <label className="flex items-center gap-2 text-sm text-fg-muted select-none">
+        <input
+          type="checkbox"
+          {...form.register("knowsStages")}
+          className="h-4 w-4 rounded border-border bg-surface-2"
+        />
+        <span>Conozco mis stages (REM/Deep/Awake)</span>
+      </label>
+
+      {knowsStages && (
+        <div className="grid grid-cols-3 gap-3 rounded-xl border border-border bg-surface-2 p-3">
+          <Field>
+            <Label htmlFor="deepHours">Deep (h)</Label>
+            <Input
+              id="deepHours"
+              type="number"
+              step={0.1}
+              min={0}
+              max={6}
+              {...form.register("deepHours", { valueAsNumber: true })}
+            />
+          </Field>
+          <Field>
+            <Label htmlFor="remHours">REM (h)</Label>
+            <Input
+              id="remHours"
+              type="number"
+              step={0.1}
+              min={0}
+              max={6}
+              {...form.register("remHours", { valueAsNumber: true })}
+            />
+          </Field>
+          <Field>
+            <Label htmlFor="awakeMinutes">Awake (min)</Label>
+            <Input
+              id="awakeMinutes"
+              type="number"
+              min={0}
+              max={240}
+              {...form.register("awakeMinutes", { valueAsNumber: true })}
+            />
+          </Field>
+          <p className="col-span-3 text-[11px] text-fg-dim">
+            El resto se asume Light (Core). Si no los conocés, dejá la opción sin tildar.
+          </p>
+        </div>
+      )}
 
       <div className="flex items-center justify-between gap-3 pt-2">
         <Button type="submit" disabled={form.formState.isSubmitting}>

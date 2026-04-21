@@ -8,14 +8,18 @@ export function SleepBreakdown({ session }: { session: SleepSession }) {
     asleepMin: session.asleepMin,
     needMin: session.needMin,
     timeInBedMin: session.timeInBedMin,
+    stages: session.stages,
   });
 
-  const rows = [
+  const rows: Array<{ label: string; value: string; bar?: number }> = [
     { label: "Asleep", value: formatHours(session.asleepMin), bar: parts.duration },
     { label: "Need", value: formatHours(session.needMin), bar: 100 },
     { label: "Efficiency", value: `${Math.round(parts.efficiency)}%`, bar: parts.efficiency },
-    { label: "Disturbances", value: String(session.disturbances), bar: undefined },
   ];
+  if (session.stages) {
+    rows.push({ label: "Quality (REM+Deep)", value: `${Math.round(parts.quality)}%`, bar: parts.quality });
+  }
+  rows.push({ label: "Disturbances", value: String(session.disturbances) });
 
   return (
     <div className="space-y-2.5">

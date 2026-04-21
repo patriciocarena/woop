@@ -11,6 +11,7 @@
  *
  * We extract four things:
  *   1. Sleep analysis  → one sleep session per calendar wake-date
+ *                        (with REM/Deep/Core/Awake breakdown when available)
  *   2. HRV (SDNN)      → daily mean in ms
  *   3. Resting HR      → daily mean in bpm
  *   4. Workouts        → duration + sport (HR not on the <Workout> tag)
@@ -21,12 +22,25 @@
 
 import type { Sport } from "@/lib/scoring/strain";
 
+export type SleepStages = {
+  /** "Asleep Core" / Light sleep, in minutes. */
+  coreMin: number;
+  /** Deep / SWS sleep, in minutes. */
+  deepMin: number;
+  /** REM sleep, in minutes. */
+  remMin: number;
+  /** Awake-during-night, in minutes. */
+  awakeMin: number;
+};
+
 export type ParsedSleep = {
   date: string;          // YYYY-MM-DD (wake date)
   startedAt: string;     // ISO
   endedAt: string;       // ISO
   asleepMin: number;
   disturbances: number;
+  /** Per-stage breakdown when the source distinguishes them (Apple Watch ≥ watchOS 9). */
+  stages?: SleepStages;
 };
 
 export type ParsedRecovery = {
@@ -100,20 +114,33 @@ function mapSport(hkType: string): Sport {
 
 // ─── Main parse ──────────────────────────────────────────────────────────
 
-const SLEEP_ASLEEP = new Set([
-  "HKCategoryValueSleepAnalysisAsleepCore",
-  "HKCategoryValueSleepAnalysisAsleepDeep",
-  "HKCategoryValueSleepAnalysisAsleepREM",
-  "HKCategoryValueSleepAnalysisAsleepUnspecified",
-  "HKCategoryValueSleepAnalysisAsleep", // legacy
-]);
+type SleepStageKey = "core" | "deep" | "rem" | "unspecified";
+
+const SLEEP_STAGE_MAP: Record<string, SleepStageKey> = {
+  HKCategoryValueSleepAnalysisAsleepCore: "core",
+  HKCategoryValueSleepAnalysisAsleepDeep: "deep",
+  HKCategoryValueSleepAnalysisAsleepREM: "rem",
+  HKCategoryValueSleepAnalysisAsleepUnspecified: "unspecified",
+  HKCategoryValueSleepAnalysisAsleep: "unspecified", // legacy
+};
 const SLEEP_AWAKE = "HKCategoryValueSleepAnalysisAwake";
 
+type SleepBucket = {
+  startedAt: string;
+  endedAt: string;
+  asleepMin: number;
+  disturbances: number;
+  coreMin: number;
+  deepMin: number;
+  remMin: number;
+  awakeMin: number;
+  unspecifiedMin: number;
+  /** Did we ever see a stage-aware (Core/Deep/REM) segment? */
+  hasStages: boolean;
+};
+
 export function parseAppleHealth(xml: string): ParseResult {
-  const sleepByDate = new Map<
-    string,
-    { startedAt: string; endedAt: string; asleepMin: number; disturbances: number }
-  >();
+  const sleepByDate = new Map<string, SleepBucket>();
   const hrvByDate = new Map<string, number[]>();
   const rhrByDate = new Map<string, number[]>();
   const workouts: ParsedWorkout[] = [];
@@ -136,19 +163,31 @@ export function parseAppleHealth(xml: string): ParseResult {
       const dur = (new Date(endISO).getTime() - new Date(startISO).getTime()) / 60_000;
       if (dur <= 0 || dur > 24 * 60) { skipped.sleepSegments++; continue; }
 
-      const bucket = sleepByDate.get(wakeDate) ?? {
+      const bucket: SleepBucket = sleepByDate.get(wakeDate) ?? {
         startedAt: startISO,
         endedAt: endISO,
         asleepMin: 0,
         disturbances: 0,
+        coreMin: 0,
+        deepMin: 0,
+        remMin: 0,
+        awakeMin: 0,
+        unspecifiedMin: 0,
+        hasStages: false,
       };
       if (startISO < bucket.startedAt) bucket.startedAt = startISO;
       if (endISO > bucket.endedAt) bucket.endedAt = endISO;
 
-      if (SLEEP_ASLEEP.has(value)) {
+      const stage = SLEEP_STAGE_MAP[value];
+      if (stage) {
         bucket.asleepMin += dur;
+        if (stage === "core") { bucket.coreMin += dur; bucket.hasStages = true; }
+        else if (stage === "deep") { bucket.deepMin += dur; bucket.hasStages = true; }
+        else if (stage === "rem") { bucket.remMin += dur; bucket.hasStages = true; }
+        else { bucket.unspecifiedMin += dur; }
       } else if (value === SLEEP_AWAKE) {
         bucket.disturbances += 1;
+        bucket.awakeMin += dur;
       }
       // HKCategoryValueSleepAnalysisInBed → ignored for asleepMin (covers bed bounds).
       sleepByDate.set(wakeDate, bucket);
@@ -206,13 +245,24 @@ export function parseAppleHealth(xml: string): ParseResult {
   // Assemble buckets.
   const sleep: ParsedSleep[] = [...sleepByDate.entries()]
     .filter(([, b]) => b.asleepMin >= 60) // noise floor: <1h is likely a nap fragment
-    .map(([date, b]) => ({
-      date,
-      startedAt: b.startedAt,
-      endedAt: b.endedAt,
-      asleepMin: Math.round(b.asleepMin),
-      disturbances: b.disturbances,
-    }))
+    .map(([date, b]) => {
+      const out: ParsedSleep = {
+        date,
+        startedAt: b.startedAt,
+        endedAt: b.endedAt,
+        asleepMin: Math.round(b.asleepMin),
+        disturbances: b.disturbances,
+      };
+      if (b.hasStages) {
+        out.stages = {
+          coreMin: Math.round(b.coreMin + b.unspecifiedMin), // fold "Asleep" legacy into Core bucket
+          deepMin: Math.round(b.deepMin),
+          remMin: Math.round(b.remMin),
+          awakeMin: Math.round(b.awakeMin),
+        };
+      }
+      return out;
+    })
     .sort((a, b) => a.date.localeCompare(b.date));
 
   const recovery: ParsedRecovery[] = [];

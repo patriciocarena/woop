@@ -4,6 +4,17 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { computeSleepNeed, computeSleepPerformance, computeSleepDebt, computeConsistency } from "@/lib/scoring/sleep";
 
+export type SleepStages = {
+  /** Light / Core sleep, in minutes. */
+  coreMin: number;
+  /** Deep / SWS, in minutes. */
+  deepMin: number;
+  /** REM, in minutes. */
+  remMin: number;
+  /** Awake during the night, in minutes. */
+  awakeMin: number;
+};
+
 export type SleepSession = {
   id: string;
   /** ISO date (YYYY-MM-DD) — the *wake* date by Whoop convention. */
@@ -22,6 +33,8 @@ export type SleepSession = {
   performance: number;
   /** Cached sleep need at write time, in minutes. */
   needMin: number;
+  /** Per-stage breakdown when known (Apple Watch import or manual entry). */
+  stages?: SleepStages;
   notes?: string;
   createdAt: string;
 };
@@ -39,6 +52,7 @@ export type NewSleepInput = {
   endedAt: string;
   asleepMin: number;
   disturbances?: number;
+  stages?: SleepStages;
   notes?: string;
 };
 
@@ -75,6 +89,7 @@ export const useSleepStore = create<SleepStore>()(
           needMin,
           timeInBedMin,
           consistency,
+          stages: input.stages,
         });
 
         const session: SleepSession = {
@@ -87,6 +102,7 @@ export const useSleepStore = create<SleepStore>()(
           disturbances: input.disturbances ?? 0,
           performance: score,
           needMin,
+          stages: input.stages,
           notes: input.notes,
           createdAt: new Date().toISOString(),
         };

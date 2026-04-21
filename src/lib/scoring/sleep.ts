@@ -41,6 +41,13 @@ export function computeSleepNeed({
   return clamp(raw, 5 * MIN_PER_HOUR, 11 * MIN_PER_HOUR);
 }
 
+export type SleepStagesInput = {
+  coreMin: number;
+  deepMin: number;
+  remMin: number;
+  awakeMin: number;
+};
+
 export type SleepPerformanceInputs = {
   /** Minutes actually asleep last night. */
   asleepMin: number;
@@ -54,6 +61,8 @@ export type SleepPerformanceInputs = {
    *  Pass undefined when you don't have enough history (we'll skip the penalty).
    */
   consistency?: number;
+  /** Per-stage breakdown — when present, awards a quality bonus for adequate Deep + REM. */
+  stages?: SleepStagesInput;
 };
 
 export type SleepPerformance = {
@@ -64,24 +73,54 @@ export type SleepPerformance = {
     duration: number;     // asleep / need
     efficiency: number;   // asleep / timeInBed
     consistency: number;  // 0..100 (or 100 if not enough history)
+    quality: number;      // 0..100 stage quality (100 if no stages info)
   };
 };
 
+/** Recommended-minimum thresholds (NSF/AASM-ish for adults). */
+const DEEP_TARGET_MIN = 90;   // 1.5h deep
+const REM_TARGET_MIN = 90;    // 1.5h REM
+
 /**
- * Weighted blend: 70 % duration, 20 % efficiency, 10 % consistency.
- * Whoop's exact weights aren't public, but duration dominates in their UI too.
+ * Sleep stage quality, 0..100.
+ *
+ * Penalises shortfalls of Deep and REM against their targets, equally weighted.
+ * If you hit both targets you get 100. Missing half of each → 50, etc. If we
+ * don't know your stages (no Apple Watch / manual entry), we return 100 so
+ * the overall performance score is unchanged.
+ */
+export function computeSleepQuality(stages: SleepStagesInput | undefined): number {
+  if (!stages) return 100;
+  const deepRatio = clamp(stages.deepMin / DEEP_TARGET_MIN, 0, 1);
+  const remRatio = clamp(stages.remMin / REM_TARGET_MIN, 0, 1);
+  return round1((deepRatio * 0.5 + remRatio * 0.5) * 100);
+}
+
+/**
+ * Weighted blend, default (no stages):
+ *   70 % duration · 20 % efficiency · 10 % consistency
+ *
+ * With stages present we re-weight to:
+ *   55 % duration · 15 % efficiency · 10 % consistency · 20 % quality (Deep + REM)
+ *
+ * Whoop's exact weights aren't public, but duration dominates in their UI too,
+ * and stage quality is one of the four breakdowns they surface.
  */
 export function computeSleepPerformance({
   asleepMin,
   needMin,
   timeInBedMin,
   consistency,
+  stages,
 }: SleepPerformanceInputs): SleepPerformance {
   const duration = clamp((asleepMin / Math.max(needMin, 1)) * 100, 0, 100);
   const efficiency = clamp((asleepMin / Math.max(timeInBedMin, 1)) * 100, 0, 100);
   const consistencyPct = consistency === undefined ? 100 : clamp(consistency * 100, 0, 100);
+  const quality = computeSleepQuality(stages);
 
-  const score = duration * 0.7 + efficiency * 0.2 + consistencyPct * 0.1;
+  const score = stages
+    ? duration * 0.55 + efficiency * 0.15 + consistencyPct * 0.10 + quality * 0.20
+    : duration * 0.70 + efficiency * 0.20 + consistencyPct * 0.10;
 
   return {
     score: round1(score),
@@ -89,6 +128,7 @@ export function computeSleepPerformance({
       duration: round1(duration),
       efficiency: round1(efficiency),
       consistency: round1(consistencyPct),
+      quality: round1(quality),
     },
   };
 }

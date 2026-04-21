@@ -33,6 +33,7 @@ export function applyAppleHealthImport(result: ParseResult): ApplySummary {
       endedAt: s.endedAt,
       asleepMin: s.asleepMin,
       disturbances: s.disturbances,
+      stages: s.stages,
     });
     summary.sleepAdded++;
   }
