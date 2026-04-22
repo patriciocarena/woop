@@ -12,9 +12,32 @@
 import type { RecoveryZone } from "./recovery";
 
 export const MAX_STRAIN = 21;
+
+/**
+ * Saturation constant in the TRIMP→strain mapping `21 * (1 − e^(−trimp/D))`.
+ *
+ * Why 180:
+ *  • A "lazy day" (no workouts, ambient TRIMP ≈ 60) maps to ~6 strain.
+ *  • A 60-min steady-state run (~340 TRIMP) maps to ~17 strain.
+ *  • A 60-min walk (~70 TRIMP) maps to ~7 strain.
+ * Lowering this number makes everything spike toward 21; raising it makes
+ * even hard workouts read as moderate. Re-tune by re-running tests in
+ * tests/unit/scoring/strain.test.ts which lock in the bands.
+ */
 export const STRAIN_DIVISOR = 180;
+
+/**
+ * Ambient daily TRIMP (steps + non-workout activity). 60 puts a rest day at
+ * ~6 strain — matches Whoop's "Light" band for inactive days.
+ */
 export const DEFAULT_AMBIENT_TRIMP = 60;
 
+/**
+ * Defaults when the user has not set a personal max / resting HR.
+ *  • DEFAULT_MAX_HR 190    ≈ 220 − 30y (population mean)
+ *  • DEFAULT_RESTING_HR 60 — adult population mean
+ * These should be overridden via ProfileSettings whenever possible.
+ */
 export const DEFAULT_MAX_HR = 190;
 export const DEFAULT_RESTING_HR = 60;
 

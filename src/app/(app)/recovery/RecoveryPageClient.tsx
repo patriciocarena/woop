@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { RecoveryRing } from "@/components/metrics/RecoveryRing";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RecoveryEntryForm } from "@/components/recovery/RecoveryEntryForm";
@@ -8,7 +9,6 @@ import { RecoveryHistory } from "@/components/recovery/RecoveryHistory";
 import {
   useRecoveryStore,
   selectLatestRecovery,
-  selectLast7Recovery,
   selectIsCalibrating,
 } from "@/lib/store/recovery";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
@@ -17,9 +17,12 @@ import { MIN_BASELINE_SAMPLES } from "@/lib/scoring/recovery";
 export function RecoveryPageClient() {
   const hydrated = useHydrated();
   const latest = useRecoveryStore(selectLatestRecovery);
-  const last7 = useRecoveryStore(selectLast7Recovery);
   const calibrating = useRecoveryStore(selectIsCalibrating);
-  const entryCount = useRecoveryStore((s) => s.entries.length);
+  // Subscribe to raw array; derive 7-day slice via useMemo to avoid
+  // React 19 getServerSnapshot loop from `slice(-7)` selector.
+  const entries = useRecoveryStore((s) => s.entries);
+  const last7 = useMemo(() => entries.slice(-7), [entries]);
+  const entryCount = entries.length;
 
   return (
     <div className="space-y-8">

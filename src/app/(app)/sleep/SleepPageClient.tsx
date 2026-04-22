@@ -1,18 +1,23 @@
 "use client";
 
+import { useMemo } from "react";
 import { SleepRing } from "@/components/metrics/RecoveryRing";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SleepEntryForm } from "@/components/sleep/SleepEntryForm";
 import { SleepBreakdown } from "@/components/sleep/SleepBreakdown";
 import { SleepStagesBar } from "@/components/sleep/SleepStagesBar";
 import { SleepHistory } from "@/components/sleep/SleepHistory";
-import { useSleepStore, selectLatestSleep, selectLast7 } from "@/lib/store/sleep";
+import { useSleepStore, selectLatestSleep } from "@/lib/store/sleep";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
 
 export function SleepPageClient() {
   const hydrated = useHydrated();
   const latest = useSleepStore(selectLatestSleep);
-  const last7 = useSleepStore(selectLast7);
+  // Subscribe to the raw array; derive the 7-day slice with useMemo so the
+  // child doesn't see a fresh array each render (would trigger React 19's
+  // getServerSnapshot warning via the `slice(-7)` selector).
+  const sessions = useSleepStore((s) => s.sessions);
+  const last7 = useMemo(() => sessions.slice(-7), [sessions]);
 
   return (
     <div className="space-y-8">

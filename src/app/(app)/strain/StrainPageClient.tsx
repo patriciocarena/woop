@@ -1,25 +1,41 @@
 "use client";
 
+import { useMemo } from "react";
 import { StrainRing } from "@/components/metrics/RecoveryRing";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WorkoutEntryForm } from "@/components/strain/WorkoutEntryForm";
 import { WorkoutList } from "@/components/strain/WorkoutList";
 import { StrainCoach } from "@/components/strain/StrainCoach";
 import { StrainHistory } from "@/components/strain/StrainHistory";
-import {
-  useStrainStore,
-  selectTodayWorkouts,
-  selectTodayStrain,
-} from "@/lib/store/strain";
+import { useStrainStore } from "@/lib/store/strain";
 import { useRecoveryStore, selectLatestRecovery } from "@/lib/store/recovery";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
-import { strainBand } from "@/lib/scoring/strain";
+import { dayStrain, strainBand } from "@/lib/scoring/strain";
 
 export function StrainPageClient() {
   const hydrated = useHydrated();
-  const todayWorkouts = useStrainStore(selectTodayWorkouts);
-  const todayStrain = useStrainStore(selectTodayStrain);
+  // Subscribe to the raw array (stable reference) and derive today's slices
+  // with useMemo to avoid the React 19 getServerSnapshot infinite loop.
+  const workouts = useStrainStore((s) => s.workouts);
   const recovery = useRecoveryStore(selectLatestRecovery);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const todayWorkouts = useMemo(
+    () => workouts.filter((w) => w.date === today),
+    [workouts, today],
+  );
+  const todayStrain = useMemo(
+    () =>
+      dayStrain({
+        workouts: todayWorkouts.map((w) => ({
+          durationMin: w.durationMin,
+          avgHr: w.avgHr,
+          maxHr: w.maxHr,
+          perceivedRpe: w.perceivedRpe,
+        })),
+      }),
+    [todayWorkouts],
+  );
 
   const ringValue = hydrated ? todayStrain : 0;
 

@@ -111,6 +111,11 @@ export function selectLatestRecovery(state: RecoveryStore): RecoveryEntry | unde
   return state.entries[state.entries.length - 1];
 }
 
+/**
+ * @deprecated Do not pass to `useRecoveryStore(...)` — `slice` builds a new
+ * array each call and triggers React 19 getServerSnapshot loop. Subscribe
+ * to `s.entries` and derive with `useMemo`. Safe in pure builders.
+ */
 export function selectLast7Recovery(state: RecoveryStore): RecoveryEntry[] {
   return state.entries.slice(-7);
 }

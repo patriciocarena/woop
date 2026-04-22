@@ -95,12 +95,25 @@ export const useStrainStore = create<StrainStore>()(
 );
 
 // ─── selectors ───────────────────────────────────────────────────────────
+//
+// IMPORTANT — DO NOT pass the *Today* / *Last7* / *DayStrain* selectors
+// directly to `useStrainStore(...)`. They build a NEW array/object on every
+// call, which trips React 19's `useSyncExternalStore` reference check and
+// produces an infinite "getServerSnapshot should be cached" warning.
+//
+// In components: subscribe to the raw `workouts` array and derive with
+// `useMemo` (see TodayClient.tsx, StrainPageClient.tsx).
+// In pure builders / non-React code (build-context.ts, weekly insights):
+// these selectors are fine — call once, throw away.
 
 export function selectWorkoutsByDate(date: string) {
   return (state: StrainStore) =>
     state.workouts.filter((w) => w.date === date);
 }
 
+/** @deprecated Do not pass to `useStrainStore(...)` — returns a new array
+ *  each call and triggers React 19 getServerSnapshot loop. Subscribe to
+ *  `s.workouts` and filter with `useMemo`. Safe in pure builders. */
 export function selectTodayWorkouts(state: StrainStore): Workout[] {
   const today = new Date().toISOString().slice(0, 10);
   return state.workouts.filter((w) => w.date === today);
@@ -120,11 +133,15 @@ export function selectDayStrain(date: string) {
   };
 }
 
+/** @deprecated Same caveat as `selectTodayWorkouts` — derive via useMemo
+ *  in components. Safe in pure builders. */
 export function selectTodayStrain(state: StrainStore): number {
   const today = new Date().toISOString().slice(0, 10);
   return selectDayStrain(today)(state);
 }
 
+/** @deprecated Builds a fresh 7-day array on every call. Subscribe to
+ *  `s.workouts` and derive with `useMemo` (see StrainHistory.tsx). */
 export function selectLast7DaysStrain(state: StrainStore): { date: string; strain: number }[] {
   const days: { date: string; strain: number }[] = [];
   for (let i = 6; i >= 0; i--) {

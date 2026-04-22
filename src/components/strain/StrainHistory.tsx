@@ -1,11 +1,34 @@
 "use client";
 
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useStrainStore, selectLast7DaysStrain } from "@/lib/store/strain";
-import { strainBand, MAX_STRAIN } from "@/lib/scoring/strain";
+import { useStrainStore } from "@/lib/store/strain";
+import { dayStrain, strainBand, MAX_STRAIN } from "@/lib/scoring/strain";
 
 export function StrainHistory() {
-  const days = useStrainStore(selectLast7DaysStrain);
+  // Subscribe to the raw array; derive the 7-day rollup with useMemo to
+  // avoid the React 19 getServerSnapshot loop the deprecated selector
+  // would cause (it built a new array on every render).
+  const workouts = useStrainStore((s) => s.workouts);
+  const days = useMemo(() => {
+    const out: { date: string; strain: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const date = d.toISOString().slice(0, 10);
+      const dayWorkouts = workouts.filter((w) => w.date === date);
+      const strain = dayStrain({
+        workouts: dayWorkouts.map((w) => ({
+          durationMin: w.durationMin,
+          avgHr: w.avgHr,
+          maxHr: w.maxHr,
+          perceivedRpe: w.perceivedRpe,
+        })),
+      });
+      out.push({ date, strain });
+    }
+    return out;
+  }, [workouts]);
   const max = Math.max(MAX_STRAIN, ...days.map((d) => d.strain));
 
   return (

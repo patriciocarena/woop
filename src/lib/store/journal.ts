@@ -127,17 +127,26 @@ export const useJournalStore = create<JournalStore>()(
 );
 
 // ─── selectors ───────────────────────────────────────────────────────────
+//
+// `find` selectors are reference-stable (same row → same ref). The `slice`
+// selector below is NOT — see deprecation note. The factory selectors
+// (`selectEntryByDate(date)`) are also fine for `useStore` because the
+// underlying `find` returns the same object reference between renders.
 
 export function selectEntryByDate(date: string) {
   return (state: JournalStore): JournalEntry | undefined =>
     state.entries.find((e) => e.date === date);
 }
 
+/** @deprecated Same caveat as `selectTodayWorkouts` — derive via useMemo
+ *  in components. Safe in pure builders. */
 export function selectTodayEntry(state: JournalStore): JournalEntry | undefined {
   const today = new Date().toISOString().slice(0, 10);
   return state.entries.find((e) => e.date === today);
 }
 
+/** @deprecated `slice` builds a fresh array each call. Subscribe to
+ *  `s.entries` and derive with `useMemo`. Safe in pure builders. */
 export function selectLast7Entries(state: JournalStore): JournalEntry[] {
   return state.entries.slice(-7);
 }

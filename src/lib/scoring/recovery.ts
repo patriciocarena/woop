@@ -42,7 +42,26 @@ export type Recovery = {
   };
 };
 
+/**
+ * Weights for the four signals. MUST sum to 1.0 — verified by unit test.
+ *
+ * Why these numbers:
+ *  • HRV (50 %)         — the strongest predictor of next-day readiness in the
+ *                         literature (Plews & Laursen, Stanley et al.). Whoop's
+ *                         model also leans hardest on HRV.
+ *  • RHR (25 %)         — independent and fast-moving; an elevated morning RHR
+ *                         vs your own baseline is a classic over-reaching flag.
+ *  • Sleep perf (15 %)  — already a composite score (need / efficiency /
+ *                         consistency / quality), so its weight is moderate to
+ *                         avoid double-counting things that already affect HRV.
+ *  • Respiratory (10 %) — only useful as a deviation flag (illness, altitude),
+ *                         not directly correlated to readiness.
+ *
+ * Tweaks here are a meaningful change to user-facing scores. Update tests in
+ * tests/unit/scoring/recovery.test.ts when changing.
+ */
 const WEIGHTS = { hrv: 0.5, rhr: 0.25, sleep: 0.15, respiratory: 0.1 } as const;
+export const RECOVERY_WEIGHTS = WEIGHTS;
 
 export function computeRecovery({
   hrv,

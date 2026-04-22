@@ -131,7 +131,11 @@ export function selectLatestSleep(state: SleepStore): SleepSession | undefined {
   return state.sessions[state.sessions.length - 1];
 }
 
-/** Selector: last 7 sessions in chronological order. */
+/**
+ * @deprecated Do not pass to `useSleepStore(...)` — `slice` builds a new
+ * array each call and triggers React 19 getServerSnapshot loop. Subscribe
+ * to `s.sessions` and derive with `useMemo`. Safe in pure builders.
+ */
 export function selectLast7(state: SleepStore): SleepSession[] {
   return state.sessions.slice(-7);
 }

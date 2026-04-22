@@ -4,7 +4,28 @@ import {
   computeRecovery,
   zoneFor,
   MIN_BASELINE_SAMPLES,
+  RECOVERY_WEIGHTS,
 } from "@/lib/scoring/recovery";
+
+describe("RECOVERY_WEIGHTS", () => {
+  it("sums exactly to 1.0 — silent re-tuning regression guard", () => {
+    const sum =
+      RECOVERY_WEIGHTS.hrv +
+      RECOVERY_WEIGHTS.rhr +
+      RECOVERY_WEIGHTS.sleep +
+      RECOVERY_WEIGHTS.respiratory;
+    expect(sum).toBeCloseTo(1.0, 6);
+  });
+
+  it("HRV stays the dominant weight", () => {
+    const others = [
+      RECOVERY_WEIGHTS.rhr,
+      RECOVERY_WEIGHTS.sleep,
+      RECOVERY_WEIGHTS.respiratory,
+    ];
+    for (const w of others) expect(RECOVERY_WEIGHTS.hrv).toBeGreaterThan(w);
+  });
+});
 
 describe("computeBaseline", () => {
   it("returns zeros for an empty input", () => {
