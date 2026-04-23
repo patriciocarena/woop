@@ -75,8 +75,9 @@ export function AppleHealthImport() {
               <li className="flex justify-between"><span className="text-fg-muted">Sleep sessions</span> <span className="font-stat">{stage.result.sleep.length}</span></li>
               <li className="flex justify-between"><span className="text-fg-muted">Recovery days (HRV + RHR)</span> <span className="font-stat">{stage.result.recovery.length}</span></li>
               <li className="flex justify-between"><span className="text-fg-muted">Workouts</span> <span className="font-stat">{stage.result.workouts.length}</span></li>
+              <li className="flex justify-between"><span className="text-fg-muted">Vitals (SpO2 + temp + walking HR)</span> <span className="font-stat">{stage.result.vitals.spo2.length + stage.result.vitals.wristTemp.length + stage.result.vitals.walkingHr.length}</span></li>
             </ul>
-            {stage.result.sleep.length + stage.result.recovery.length + stage.result.workouts.length > 0 ? (
+            {stage.result.sleep.length + stage.result.recovery.length + stage.result.workouts.length + stage.result.vitals.spo2.length + stage.result.vitals.wristTemp.length + stage.result.vitals.walkingHr.length > 0 ? (
               <div className="flex gap-2">
                 <Button size="sm" onClick={apply}>Importar</Button>
                 <Button size="sm" variant="outline" onClick={() => setStage({ kind: "idle" })}>Cancelar</Button>
@@ -94,6 +95,7 @@ export function AppleHealthImport() {
               <li className="flex justify-between"><span className="text-fg-muted">Sleep</span> <span className="font-stat">+{stage.summary.sleepAdded} <span className="text-fg-dim text-xs">({stage.summary.sleepSkipped} duplicados)</span></span></li>
               <li className="flex justify-between"><span className="text-fg-muted">Recovery</span> <span className="font-stat">+{stage.summary.recoveryAdded} <span className="text-fg-dim text-xs">({stage.summary.recoverySkipped} duplicados)</span></span></li>
               <li className="flex justify-between"><span className="text-fg-muted">Workouts</span> <span className="font-stat">+{stage.summary.workoutsAdded} <span className="text-fg-dim text-xs">({stage.summary.workoutsSkipped} duplicados)</span></span></li>
+              <li className="flex justify-between"><span className="text-fg-muted">Vitals</span> <span className="font-stat">+{stage.summary.vitalsAdded}</span></li>
             </ul>
             <Button size="sm" variant="outline" onClick={() => setStage({ kind: "idle" })}>Importar otro archivo</Button>
           </div>

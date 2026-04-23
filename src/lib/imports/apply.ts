@@ -4,6 +4,7 @@ import type { ParseResult } from "./apple-health";
 import { useSleepStore } from "@/lib/store/sleep";
 import { useRecoveryStore } from "@/lib/store/recovery";
 import { useStrainStore } from "@/lib/store/strain";
+import { useVitalsStore } from "@/lib/store/vitals";
 
 export type ApplySummary = {
   sleepAdded: number;
@@ -12,15 +13,18 @@ export type ApplySummary = {
   recoverySkipped: number;
   workoutsAdded: number;
   workoutsSkipped: number;
+  vitalsAdded: number;
 };
 
 /** Applies a parsed Apple Health export to the local-first stores.
- *  Duplicates (same date for sleep/recovery, same startedAt for workouts) are skipped. */
+ *  Duplicates (same date for sleep/recovery, same startedAt for workouts) are skipped.
+ *  Vitals are merged by date (latest wins per calendar day). */
 export function applyAppleHealthImport(result: ParseResult): ApplySummary {
   const summary: ApplySummary = {
     sleepAdded: 0, sleepSkipped: 0,
     recoveryAdded: 0, recoverySkipped: 0,
     workoutsAdded: 0, workoutsSkipped: 0,
+    vitalsAdded: 0,
   };
 
   const sleepStore = useSleepStore.getState();
@@ -62,6 +66,21 @@ export function applyAppleHealthImport(result: ParseResult): ApplySummary {
       durationMin: w.durationMin,
     });
     summary.workoutsAdded++;
+  }
+
+  // Vitals — bulk merge per key. The store dedupes by date itself.
+  const vitalsStore = useVitalsStore.getState();
+  if (result.vitals.spo2.length) {
+    vitalsStore.setReadings("spo2", result.vitals.spo2);
+    summary.vitalsAdded += result.vitals.spo2.length;
+  }
+  if (result.vitals.wristTemp.length) {
+    vitalsStore.setReadings("wristTemp", result.vitals.wristTemp);
+    summary.vitalsAdded += result.vitals.wristTemp.length;
+  }
+  if (result.vitals.walkingHr.length) {
+    vitalsStore.setReadings("walkingHr", result.vitals.walkingHr);
+    summary.vitalsAdded += result.vitals.walkingHr.length;
   }
 
   return summary;

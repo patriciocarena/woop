@@ -5,6 +5,7 @@ import {
   Home,
   LineChart,
   NotebookPen,
+  Stethoscope,
   User,
   Users,
 } from "lucide-react";
@@ -20,6 +21,7 @@ export const navItems: NavItem[] = [
   { href: "/sleep", label: "Sleep", icon: BedDouble },
   { href: "/recovery", label: "Recovery", icon: Heart },
   { href: "/strain", label: "Strain", icon: Activity },
+  { href: "/health", label: "Health", icon: Stethoscope },
   { href: "/journal", label: "Journal", icon: NotebookPen },
   { href: "/trends", label: "Trends", icon: LineChart },
   { href: "/team", label: "Team", icon: Users },

@@ -9,12 +9,16 @@
  * rather than DOMParser (which would OOM on big exports). Each <Record/>
  * and <Workout/> element is a single line in practice.
  *
- * We extract four things:
+ * We extract:
  *   1. Sleep analysis  → one sleep session per calendar wake-date
  *                        (with REM/Deep/Core/Awake breakdown when available)
  *   2. HRV (SDNN)      → daily mean in ms
  *   3. Resting HR      → daily mean in bpm
  *   4. Workouts        → duration + sport (HR not on the <Workout> tag)
+ *   5. Vitals (Phase 13):
+ *        - SpO2 (%)
+ *        - Sleeping wrist temperature delta (°C, from baseline)
+ *        - Walking HR average (bpm)
  *
  * The parser is pure: it returns typed buckets. Applying to the stores lives
  * in a separate module so we can unit-test the parser without touching state.
@@ -56,15 +60,32 @@ export type ParsedWorkout = {
   durationMin: number;
 };
 
+/** A single daily vital reading. Daily mean of all samples on that calendar date. */
+export type ParsedVital = {
+  date: string;          // YYYY-MM-DD
+  value: number;
+};
+
+export type ParsedVitals = {
+  /** Blood oxygen saturation, in % (e.g. 96.5). */
+  spo2: ParsedVital[];
+  /** Sleeping wrist temp delta from personal baseline, in °C. May be negative. */
+  wristTemp: ParsedVital[];
+  /** Walking heart rate average, in bpm. */
+  walkingHr: ParsedVital[];
+};
+
 export type ParseResult = {
   sleep: ParsedSleep[];
   recovery: ParsedRecovery[];
   workouts: ParsedWorkout[];
+  vitals: ParsedVitals;
   skipped: {
     sleepSegments: number;
     hrvReadings: number;
     rhrReadings: number;
     workoutRecords: number;
+    vitalReadings: number;
   };
 };
 
@@ -143,8 +164,17 @@ export function parseAppleHealth(xml: string): ParseResult {
   const sleepByDate = new Map<string, SleepBucket>();
   const hrvByDate = new Map<string, number[]>();
   const rhrByDate = new Map<string, number[]>();
+  const spo2ByDate = new Map<string, number[]>();
+  const wristTempByDate = new Map<string, number[]>();
+  const walkingHrByDate = new Map<string, number[]>();
   const workouts: ParsedWorkout[] = [];
-  const skipped = { sleepSegments: 0, hrvReadings: 0, rhrReadings: 0, workoutRecords: 0 };
+  const skipped = {
+    sleepSegments: 0,
+    hrvReadings: 0,
+    rhrReadings: 0,
+    workoutRecords: 0,
+    vitalReadings: 0,
+  };
 
   // <Record .../> (self-closing or with children — we only need the open tag).
   const recordRe = /<Record\b([^>]*?)\/?>/g;
@@ -213,6 +243,42 @@ export function parseAppleHealth(xml: string): ParseResult {
       rhrByDate.set(d, arr);
       continue;
     }
+
+    if (type === "HKQuantityTypeIdentifierOxygenSaturation") {
+      // Apple stores SpO2 as a fraction (0.0–1.0). Some exports store percent
+      // (0–100). Detect by magnitude and normalize to percent for display.
+      const raw = Number(attrs.value);
+      if (!Number.isFinite(raw) || raw <= 0) { skipped.vitalReadings++; continue; }
+      const pct = raw <= 1 ? raw * 100 : raw;
+      // Plausibility filter — physiological SpO2 sits in 70–100%.
+      if (pct < 70 || pct > 100) { skipped.vitalReadings++; continue; }
+      const d = localDate(startISO);
+      const arr = spo2ByDate.get(d) ?? [];
+      arr.push(pct);
+      spo2ByDate.set(d, arr);
+      continue;
+    }
+
+    if (type === "HKQuantityTypeIdentifierAppleSleepingWristTemperature") {
+      // This is a *delta* from your personal baseline, in °C. Negative is normal.
+      const v = Number(attrs.value);
+      if (!Number.isFinite(v) || v < -5 || v > 5) { skipped.vitalReadings++; continue; }
+      const d = localDate(startISO);
+      const arr = wristTempByDate.get(d) ?? [];
+      arr.push(v);
+      wristTempByDate.set(d, arr);
+      continue;
+    }
+
+    if (type === "HKQuantityTypeIdentifierWalkingHeartRateAverage") {
+      const v = Number(attrs.value);
+      if (!Number.isFinite(v) || v < 40 || v > 220) { skipped.vitalReadings++; continue; }
+      const d = localDate(startISO);
+      const arr = walkingHrByDate.get(d) ?? [];
+      arr.push(v);
+      walkingHrByDate.set(d, arr);
+      continue;
+    }
   }
 
   // <Workout .../> — attributes on the open tag only.
@@ -277,7 +343,25 @@ export function parseAppleHealth(xml: string): ParseResult {
   }
   recovery.sort((a, b) => a.date.localeCompare(b.date));
 
-  return { sleep, recovery, workouts, skipped };
+  const vitals: ParsedVitals = {
+    spo2: aggregateDailyMean(spo2ByDate, 1),
+    wristTemp: aggregateDailyMean(wristTempByDate, 2),
+    walkingHr: aggregateDailyMean(walkingHrByDate, 0),
+  };
+
+  return { sleep, recovery, workouts, vitals, skipped };
+}
+
+function aggregateDailyMean(
+  byDate: Map<string, number[]>,
+  digits: number,
+): ParsedVital[] {
+  const out: ParsedVital[] = [];
+  for (const [date, values] of byDate) {
+    if (values.length === 0) continue;
+    out.push({ date, value: round(mean(values), digits) });
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date));
 }
 
 function mean(xs: number[]): number {
