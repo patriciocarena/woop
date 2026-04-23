@@ -15,6 +15,7 @@ import { dayStrain } from "@/lib/scoring/strain";
 import { useJournalStore } from "@/lib/store/journal";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
 import { DailyCoach } from "@/components/today/DailyCoach";
+import { BedtimeRecommendation } from "@/components/today/BedtimeRecommendation";
 import { InstallPromptCard } from "@/components/pwa/InstallPromptCard";
 
 export function TodayClient() {
@@ -95,6 +96,8 @@ export function TodayClient() {
       </div>
 
       <InstallPromptCard />
+
+      <BedtimeRecommendation />
 
       <DailyCoach />
 

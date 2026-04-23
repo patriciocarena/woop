@@ -13,6 +13,11 @@ export type Profile = {
   restingHr?: number;
   /** Target nightly sleep in minutes. Defaults to 480 (8h). */
   sleepNeedMin?: number;
+  /**
+   * Usual wake time as "HH:MM" (24h). Used by the Sleep Coach to back-calculate
+   * tonight's target bedtime. Defaults to "07:00" when not set.
+   */
+  wakeTime?: string;
   onboardingCompleted: boolean;
   onboardingCompletedAt?: string;
 };

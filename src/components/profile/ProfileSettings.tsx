@@ -18,6 +18,7 @@ export function ProfileSettings() {
   const [sleepHours, setSleepHours] = useState(
     profile.sleepNeedMin ? (profile.sleepNeedMin / 60).toString() : "",
   );
+  const [wakeTime, setWakeTime] = useState(profile.wakeTime ?? "07:00");
 
   if (!hydrated) {
     return (
@@ -35,6 +36,7 @@ export function ProfileSettings() {
       maxHr: parseOptInt(maxHr, 120, 230),
       restingHr: parseOptInt(restingHr, 30, 120),
       sleepNeedMin: parseOptHoursToMin(sleepHours),
+      wakeTime: wakeTime || "07:00",
     };
     profile.set(patch);
     setSaved(true);
@@ -84,6 +86,14 @@ export function ProfileSettings() {
               type="number"
               value={restingHr}
               onChange={(e) => setRestingHr(e.target.value)}
+              className="w-full rounded-lg bg-surface-2 border border-border px-3 py-2 text-fg"
+            />
+          </Field>
+          <Field label="Hora despertar">
+            <input
+              type="time"
+              value={wakeTime}
+              onChange={(e) => setWakeTime(e.target.value)}
               className="w-full rounded-lg bg-surface-2 border border-border px-3 py-2 text-fg"
             />
           </Field>

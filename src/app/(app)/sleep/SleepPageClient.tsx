@@ -9,6 +9,7 @@ import { SleepStagesBar } from "@/components/sleep/SleepStagesBar";
 import { SleepHistory } from "@/components/sleep/SleepHistory";
 import { useSleepStore, selectLatestSleep } from "@/lib/store/sleep";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
+import { BedtimeRecommendation } from "@/components/today/BedtimeRecommendation";
 
 export function SleepPageClient() {
   const hydrated = useHydrated();
@@ -43,6 +44,8 @@ export function SleepPageClient() {
           </CardContent>
         </Card>
       )}
+
+      <BedtimeRecommendation />
 
       <Card>
         <CardHeader><CardTitle>Log a night</CardTitle></CardHeader>
