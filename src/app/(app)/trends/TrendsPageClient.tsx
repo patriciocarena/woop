@@ -23,6 +23,7 @@ import { dayStrain } from "@/lib/scoring/strain";
 import { cn } from "@/lib/utils";
 
 const RANGES = [
+  { label: "7d", days: 7 },
   { label: "30d", days: 30 },
   { label: "60d", days: 60 },
   { label: "90d", days: 90 },
@@ -35,7 +36,7 @@ export function TrendsPageClient() {
   const workouts = useStrainStore((s) => s.workouts);
   const journalEntries = useJournalStore((s) => s.entries);
 
-  const [days, setDays] = useState<number>(30);
+  const [days, setDays] = useState<number>(7);
 
   const recoveryByDate = useMemo(
     () => new Map(recoveryEntries.map((e) => [e.date, e.score])),
