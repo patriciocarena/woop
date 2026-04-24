@@ -17,6 +17,7 @@ import {
 } from "@/lib/insights/trends";
 import { behaviorImpacts } from "@/lib/insights/correlations";
 import { buildWeeklyAssessment } from "@/lib/insights/weekly";
+import { currentIsoWeek } from "@/lib/insights/iso-week";
 import { dayStrain } from "@/lib/scoring/strain";
 import { cn } from "@/lib/utils";
 
@@ -125,6 +126,15 @@ export function TrendsPageClient() {
   return (
     <div className="space-y-6">
       <WeeklyAssessmentCard assessment={assessment} />
+
+      <div className="flex justify-end">
+        <a
+          href={`/assessment/${currentIsoWeek()}`}
+          className="text-xs uppercase tracking-widest text-fg-muted hover:text-fg transition-colors"
+        >
+          Ver assessment completo →
+        </a>
+      </div>
 
       <div className="flex items-center justify-between">
         <h2 className="text-sm uppercase tracking-[0.18em] text-fg-muted">Last {days} days</h2>

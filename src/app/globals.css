@@ -47,3 +47,57 @@ body {
 .no-scrollbar {
   scrollbar-width: none;
 }
+
+/* ── Print / PDF export ──────────────────────────────────────────────────── */
+@media print {
+  /* Hide navigation chrome */
+  aside,
+  nav {
+    display: none !important;
+  }
+
+  /* Reset layout so content fills the page */
+  body,
+  html {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  main > div {
+    max-width: 100% !important;
+    padding: 1.5cm 2cm !important;
+  }
+
+  /* Tailwind print: variants */
+  .print\:hidden {
+    display: none !important;
+  }
+  .print\:block {
+    display: block !important;
+  }
+
+  /* Avoid page breaks inside cards */
+  [class*="rounded-2xl"] {
+    break-inside: avoid;
+    border: 1px solid #dddddd !important;
+    background: #fafafa !important;
+  }
+
+  /* Text colour overrides for readability on white */
+  [class*="text-fg-muted"],
+  [class*="text-fg-dim"] {
+    color: #555555 !important;
+  }
+  [class*="text-fg"] {
+    color: #111111 !important;
+  }
+  [class*="text-recovery-high"] { color: #16a34a !important; }
+  [class*="text-recovery-mid"]  { color: #ca8a04 !important; }
+  [class*="text-recovery-low"]  { color: #dc2626 !important; }
+  [class*="text-sleep"]         { color: #6b5cff !important; }
+  [class*="text-strain"]        { color: #1693fe !important; }
+}
