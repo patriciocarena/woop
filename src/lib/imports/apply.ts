@@ -82,6 +82,10 @@ export function applyAppleHealthImport(result: ParseResult): ApplySummary {
     vitalsStore.setReadings("walkingHr", result.vitals.walkingHr);
     summary.vitalsAdded += result.vitals.walkingHr.length;
   }
+  if (result.vitals.stressScore.length) {
+    vitalsStore.setReadings("stressScore", result.vitals.stressScore);
+    summary.vitalsAdded += result.vitals.stressScore.length;
+  }
 
   return summary;
 }

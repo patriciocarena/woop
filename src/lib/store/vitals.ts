@@ -22,12 +22,14 @@ export type VitalReading = {
   value: number;
 };
 
-export type VitalKey = "spo2" | "wristTemp" | "walkingHr";
+export type VitalKey = "spo2" | "wristTemp" | "walkingHr" | "stressScore";
 
 type VitalsStore = {
   spo2: VitalReading[];
   wristTemp: VitalReading[];
   walkingHr: VitalReading[];
+  /** Daily stress score 1–3 derived from intra-day HR coefficient of variation. */
+  stressScore: VitalReading[];
   /** Bulk-add readings for a single vital. New dates win over existing ones. */
   setReadings: (key: VitalKey, readings: VitalReading[]) => void;
   reset: () => void;
@@ -49,11 +51,12 @@ export const useVitalsStore = create<VitalsStore>()(
       spo2: [],
       wristTemp: [],
       walkingHr: [],
+      stressScore: [],
 
       setReadings: (key, readings) =>
         set((state) => ({ [key]: mergeByDate(state[key], readings) })),
 
-      reset: () => set({ spo2: [], wristTemp: [], walkingHr: [] }),
+      reset: () => set({ spo2: [], wristTemp: [], walkingHr: [], stressScore: [] }),
     }),
     {
       name: "woop:vitals:v1",

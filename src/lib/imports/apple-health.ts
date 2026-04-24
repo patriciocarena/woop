@@ -25,6 +25,7 @@
  */
 
 import type { Sport } from "@/lib/scoring/strain";
+import { computeStressFromStats } from "@/lib/scoring/stress";
 
 export type SleepStages = {
   /** "Asleep Core" / Light sleep, in minutes. */
@@ -73,6 +74,12 @@ export type ParsedVitals = {
   wristTemp: ParsedVital[];
   /** Walking heart rate average, in bpm. */
   walkingHr: ParsedVital[];
+  /**
+   * Stress score per day (1 = Low, 2 = Moderate, 3 = High) derived from the
+   * coefficient of variation of all HR samples recorded that day.
+   * Only emitted for days with ≥ 5 HR readings.
+   */
+  stressScore: ParsedVital[];
 };
 
 export type ParseResult = {
@@ -160,6 +167,9 @@ type SleepBucket = {
   hasStages: boolean;
 };
 
+/** Running stats for computing stddev without holding all values. */
+type HrStats = { count: number; sum: number; sumSq: number };
+
 export function parseAppleHealth(xml: string): ParseResult {
   const sleepByDate = new Map<string, SleepBucket>();
   const hrvByDate = new Map<string, number[]>();
@@ -167,6 +177,8 @@ export function parseAppleHealth(xml: string): ParseResult {
   const spo2ByDate = new Map<string, number[]>();
   const wristTempByDate = new Map<string, number[]>();
   const walkingHrByDate = new Map<string, number[]>();
+  /** Intra-day HR samples accumulated as running stats per date. */
+  const hrStatsByDate = new Map<string, HrStats>();
   const workouts: ParsedWorkout[] = [];
   const skipped = {
     sleepSegments: 0,
@@ -279,6 +291,20 @@ export function parseAppleHealth(xml: string): ParseResult {
       walkingHrByDate.set(d, arr);
       continue;
     }
+
+    // Intra-day HR samples — accumulated as running stats (count/sum/sumSq) to
+    // avoid holding thousands of values in memory. Used to derive daily stress score.
+    if (type === "HKQuantityTypeIdentifierHeartRate") {
+      const v = Number(attrs.value);
+      if (!Number.isFinite(v) || v < 30 || v > 250) { skipped.vitalReadings++; continue; }
+      const d = localDate(startISO);
+      const s = hrStatsByDate.get(d) ?? { count: 0, sum: 0, sumSq: 0 };
+      s.count++;
+      s.sum += v;
+      s.sumSq += v * v;
+      hrStatsByDate.set(d, s);
+      continue;
+    }
   }
 
   // <Workout .../> — attributes on the open tag only.
@@ -343,10 +369,19 @@ export function parseAppleHealth(xml: string): ParseResult {
   }
   recovery.sort((a, b) => a.date.localeCompare(b.date));
 
+  // Compute daily stress scores from intra-day HR running stats.
+  const stressScores: ParsedVital[] = [];
+  for (const [date, stats] of hrStatsByDate) {
+    const result = computeStressFromStats(stats);
+    if (result) stressScores.push({ date, value: result.score });
+  }
+  stressScores.sort((a, b) => a.date.localeCompare(b.date));
+
   const vitals: ParsedVitals = {
     spo2: aggregateDailyMean(spo2ByDate, 1),
     wristTemp: aggregateDailyMean(wristTempByDate, 2),
     walkingHr: aggregateDailyMean(walkingHrByDate, 0),
+    stressScore: stressScores,
   };
 
   return { sleep, recovery, workouts, vitals, skipped };
