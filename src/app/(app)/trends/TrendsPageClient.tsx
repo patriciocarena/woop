@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendChart } from "@/components/trends/TrendChart";
 import { BehaviorImpactList } from "@/components/trends/BehaviorImpactList";
 import { WeeklyAssessmentCard } from "@/components/trends/WeeklyAssessment";
+import { CalendarHeatmap } from "@/components/trends/CalendarHeatmap";
 import { useRecoveryStore } from "@/lib/store/recovery";
 import { useSleepStore } from "@/lib/store/sleep";
 import { useStrainStore } from "@/lib/store/strain";
@@ -36,10 +37,14 @@ export function TrendsPageClient() {
 
   const [days, setDays] = useState<number>(30);
 
+  const recoveryByDate = useMemo(
+    () => new Map(recoveryEntries.map((e) => [e.date, e.score])),
+    [recoveryEntries],
+  );
+
   const recoverySeries = useMemo<DailyPoint[]>(() => {
-    const map = new Map(recoveryEntries.map((e) => [e.date, e.score]));
-    return addRollingMean(buildDailySeries({ days, byDate: map }), 7);
-  }, [recoveryEntries, days]);
+    return addRollingMean(buildDailySeries({ days, byDate: recoveryByDate }), 7);
+  }, [recoveryByDate, days]);
 
   const sleepSeries = useMemo<DailyPoint[]>(() => {
     const map = new Map(sleepSessions.map((s) => [s.date, s.performance]));
@@ -182,6 +187,8 @@ export function TrendsPageClient() {
         unit=""
         yMax={21}
       />
+
+      <CalendarHeatmap byDate={recoveryByDate} days={91} title="Recovery · last 13 weeks" />
 
       <BehaviorImpactList impacts={impacts} />
     </div>
